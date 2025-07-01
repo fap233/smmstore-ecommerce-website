@@ -38,7 +38,7 @@ const WhyChooseUsAltSection: React.FC = () => {
           <div className="flex items-start gap-4 p-4 rounded-lg">
             <UsersIcon className="size-10 text-white shrink-0" />
             <div>
-              <h3 className="text-2xl font-semibold mb-2">Real Followers</h3>
+              <h3 className="text-2xl font-semibold mb-2">Seguidores Reais</h3>
               <p className="text-gray-100">
                 Nós fornecemos seguidores genuínos, de alta qualidade que irão
                 engajar ativamente com o seu conteúdo. Sem bots, sem contas

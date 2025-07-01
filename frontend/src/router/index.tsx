@@ -1,13 +1,18 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "@/layouts/MainLayout";
 
 //páginas serão importadas aqui
-import HomePage from "../pages/HomePage.tsx";
-import ServicesPage from "../pages/ServicesPage.tsx";
-import LoginPage from "../pages/LoginPage.tsx";
-import RegisterPage from "../pages/RegisterPage.tsx";
-import NotFoundPage from "../pages/NotFoundPage.tsx";
-import MainLayout from "@/layouts/MainLayout.tsx";
+import HomePage from "../pages/HomePage";
+import ServicesPage from "../pages/ServicesPage";
+import LoginPage from "../pages/LoginPage";
+import RegisterPage from "../pages/RegisterPage";
+import NotFoundPage from "../pages/NotFoundPage";
+import BlogPage from "../pages/BlogPage";
+import FaqPage from "../pages/FaqPage";
+import AboutPage from "../pages/AboutPage";
+import SupportPage from "../pages/SupportPage";
+import ServiceDetailsPage from "../pages/ServiceDetailsPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -31,6 +36,14 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/services/:id"
+          element={
+            <MainLayout>
+              <ServiceDetailsPage />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/login"
           element={
             <MainLayout>
@@ -43,6 +56,38 @@ const AppRoutes: React.FC = () => {
           element={
             <MainLayout>
               <RegisterPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <MainLayout>
+              <BlogPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/faq"
+          element={
+            <MainLayout>
+              <FaqPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <MainLayout>
+              <AboutPage />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <MainLayout>
+              <SupportPage />
             </MainLayout>
           }
         />

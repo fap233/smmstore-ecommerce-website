@@ -1,12 +1,12 @@
 import React from "react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
+} from "../ui/card";
 
 //Dados ficticios para os serviços (Substituiremos com dados da API do backend depois)
 const services = [
