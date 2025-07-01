@@ -1,11 +1,11 @@
 // frontend/src/pages/HomePage.tsx
 import React from "react";
 // Importe os novos componentes
-import HeroSection from "@/components/HeroSection";
-import StatsSection from "@/components/StatsSection";
-import PlatformSelector from "@/components/PlatformSelector";
-import ServiceSection from "@/components/ServiceSection";
-import WhyChooseUsSection from "@/components/WhyChooseUsSection";
+import HeroSection from "@/components/home/HeroSection";
+import StatsSection from "@/components/home/StatsSection";
+import PlatformSelector from "@/components/home/PlatformSelector";
+import ServiceSection from "@/components/home/ServiceSection";
+import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 
 const HomePage: React.FC = () => {
   return (
