@@ -2,11 +2,20 @@ import { PrismaClient } from "@prisma/client";
 import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 
 const app = express();
 const prisma = new PrismaClient(); // Instancia do Prisma
 const port = process.env.PORT || 5000; // Porta para o backend, pode ser 5000 ou 3000
 const JWT_SECRET = process.env.JWT_SECRET || "abacaxi123"; // WARNING ALTERAR CHAVE ANTES DO DEPLOY
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET, POST, PUT, DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Middleware para parsear JSON no corpo das requisições
 app.use(express.json());
