@@ -35,6 +35,7 @@ export function LoginForm({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -46,9 +47,8 @@ export function LoginForm({
         return;
       }
 
-      localStorage.setItem("authToken", data.token);
       console.log("Login bem-sucedido:", data);
-      alert("Login bem-sucedido! Bem-vindo(a)!");
+      // alert("Login bem-sucedido! Bem-vindo(a)!");
       navigate("/");
       window.location.reload(); // Força um recarregamento para a Navbar atualizar se tiver lógica de login
     } catch (err) {
