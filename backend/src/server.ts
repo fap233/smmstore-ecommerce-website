@@ -34,8 +34,24 @@ function verifyCsrfToken(req: Request, res: Response, next: NextFunction) {
   const csrfCookie = req.cookies["csrfToken"];
   const csrfHeader = req.headers["x-csrf-token"];
 
-  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-    return res.status(403).json({ message: "Invalid CSRF Token" });
+  if (!csrfCookie || !csrfHeader) {
+    return res.status(403).json({ message: "Token CSRF inválido." });
+  }
+
+  try {
+    const csrfCookieBuffer = Buffer.from(csrfCookie, "hex");
+    const csrfHeaderBuffer = Buffer.from(csrfHeader, "hex");
+
+    if (
+      csrfCookieBuffer.length !== csrfHeaderBuffer.length ||
+      !crypto.timingSafeEqual(csrfCookieBuffer, csrfHeaderBuffer)
+    ) {
+      return res.status(403).json({ message: "Token CSRF inválido." });
+    }
+  } catch (error) {
+    return res
+      .status(403)
+      .json({ messagem: "Formato de Token CSRF inválido." });
   }
   next();
 }
@@ -117,72 +133,81 @@ app.post(
 );
 
 // Rota de login de Usuário
-app.post("/auth/login", async (req: Request, res: Response) => {
-  const { password } = req.body;
-  const email = req.body.email.toLowerCase();
+app.post(
+  "/auth/login",
+  verifyCsrfToken,
+  async (req: Request, res: Response) => {
+    const { password } = req.body;
+    const email =
+      typeof req.body.email === "string"
+        ? req.body.email.toLowerCase()
+        : undefined;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email e senha são obrigatórios." });
-  }
-
-  try {
-    // Encontrar o usuário pelo email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return res.status(401).json({ message: "Credenciais inválidas." });
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email e senha são obrigatórios." });
     }
 
-    // Comparar a senha fornecida com o hash salvo
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    try {
+      // Encontrar o usuário pelo email
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
 
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: "Credenciais inválidas." });
+      if (!user) {
+        return res.status(401).json({ message: "Credenciais inválidas." });
+      }
+
+      // Comparar a senha fornecida com o hash salvo
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Credenciais inválidas." });
+      }
+
+      // Gerar um token JWT
+      const token = jwt.sign(
+        { userID: user.id, role: user.role }, // Payload do Token
+        JWT_SECRET, // Sua chave secreta
+        { expiresIn: "1h" }, // Token expira em 1 hora (exemplo)
+      );
+      // token httpOnly
+      res.cookie("authToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+      });
+
+      // Gera e envia novo token CSRF no login
+      const csrfToken = generateCsrfToken();
+      res.cookie("csrfToken", csrfToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 1000,
+      });
+
+      // Resposta de sucesso (não envie a senha hashed de volta!)
+      res.status(200).json({
+        message: "Login realizado com sucesso",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        csrfToken: csrfToken,
+      });
+    } catch (error) {
+      console.error("Erro no login", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno no servidor ao logar usuário." });
     }
-
-    // Gerar um token JWT
-    const token = jwt.sign(
-      { userID: user.id, role: user.role }, // Payload do Token
-      JWT_SECRET, // Sua chave secreta
-      { expiresIn: "1h" }, // Token expira em 1 hora (exemplo)
-    );
-    // token httpOnly
-    res.cookie("authToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
-    });
-
-    // Gera e envia novo token CSRF no login
-    const csrfToken = generateCsrfToken();
-    res.cookie("csrfToken", csrfToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
-    });
-
-    // Resposta de sucesso (não envie a senha hashed de volta!)
-    res.status(200).json({
-      message: "Login realizado com sucesso",
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      csrfToken: csrfToken,
-    });
-  } catch (error) {
-    console.error("Erro no login", error);
-    res
-      .status(500)
-      .json({ message: "Erro interno no servidor ao logar usuário." });
-  }
-});
+  },
+);
 
 app.post(
   "/api/protected-data",
