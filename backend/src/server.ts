@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const app = express();
 const prisma = new PrismaClient(); // Instancia do Prisma
@@ -12,13 +13,15 @@ const JWT_SECRET = process.env.JWT_SECRET || "abacaxi123"; // WARNING ALTERAR CH
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["GET, POST, PUT, DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
 
 // Middleware para parsear JSON no corpo das requisições
 app.use(express.json());
+app.use(cookieParser());
 
 // Rota de teste simples
 app.get("/", (req, res) => {
@@ -29,8 +32,8 @@ app.get("/", (req, res) => {
 
 // Rota de registro de Usuário
 app.post("/auth/register", async (req: Request, res: Response) => {
-  const { password, name } = req.body;
-  const email = req.body.email.toLowerCase();
+  const { password, name, email: rawEmail } = req.body;
+  const email = rawEmail ? rawEmail.toLowerCase() : undefined;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email e senha são obrigatórios." });
@@ -107,11 +110,17 @@ app.post("/auth/login", async (req: Request, res: Response) => {
       JWT_SECRET, // Sua chave secreta
       { expiresIn: "1h" }, // Token expira em 1 hora (exemplo)
     );
+    // token httpOnly
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 3600000,
+    });
 
     // Resposta de sucesso (não envie a senha hashed de volta!)
     res.status(200).json({
       message: "Login realizado com sucesso",
-      token, // Envie o token JWT
       user: {
         id: user.id,
         email: user.email,
