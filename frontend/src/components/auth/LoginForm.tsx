@@ -77,7 +77,6 @@ export function LoginForm({
       // Se o login for bem-sucedido o backend já enviou o JWT e o CSRF nos cookies
       // Pegue o novo token CSRF da resposta JSON para as próximas requisições
       setCsrfToken(data.csrfToken);
-      localStorage.setItem("authToken_debug", data.token);
 
       console.log("Login bem-sucedido:", data);
       // alert("Login bem-sucedido! Bem-vindo(a)!");
