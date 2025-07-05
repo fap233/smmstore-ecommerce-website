@@ -1,7 +1,7 @@
-import { cn } from "@/lib/utils";
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -9,9 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import { Label } from "../ui/label";
 
 export function RegisterForm({
   className,
@@ -42,6 +41,7 @@ export function RegisterForm({
 
       if (!response.ok) {
         setError(data.message || "Erro ao se cadastrar.");
+        return;
       }
 
       alert("Cadastro realizado com sucesso! Faça login para continuar.");
@@ -58,10 +58,10 @@ export function RegisterForm({
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="w-full max-w-sm mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Crie sua conta</CardTitle>
-          <CardDescription className="tet-muted-foreground">
+          <CardDescription className="text-muted-foreground">
             Cadastre-se gratuitamente na HydraSMM
           </CardDescription>
         </CardHeader>
@@ -118,8 +118,17 @@ export function RegisterForm({
           </div>
         </CardContent>
       </Card>
+      <div className="text-muted-foreground text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+        Ao clicar em cadastrar, você concorda com os nossos{" "}
+        <Link to="/terms" className="underline underline-offset-4">
+          Termos de Serviço
+        </Link>{" "}
+        e{" "}
+        <Link to="/privacy" className="underline underline-offset-4">
+          Política de Privacidade
+        </Link>
+        .
+      </div>
     </div>
   );
 }
-
-export default RegisterForm;

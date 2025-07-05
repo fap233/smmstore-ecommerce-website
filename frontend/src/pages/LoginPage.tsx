@@ -1,10 +1,10 @@
+import LoginForm from "@/components/auth/LoginForm";
 import React from "react";
 
 const LoginPage: React.FC = () => {
   return (
-    <div>
-      <h1>Página de login</h1>
-      <p>Página de login do E-commerce SMM!</p>
+    <div className="flex flex-col items-center justify-center min-h[calc(100vh-120px)] p-4">
+      <LoginForm />
     </div>
   );
 };
