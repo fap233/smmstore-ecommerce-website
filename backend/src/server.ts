@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role, OrderStatus, Prisma } from "@prisma/client";
 import express, { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -49,12 +49,67 @@ function verifyCsrfToken(req: Request, res: Response, next: NextFunction) {
       return res.status(403).json({ message: "Token CSRF inválido." });
     }
   } catch (error) {
-    return res
-      .status(403)
-      .json({ messagem: "Formato de Token CSRF inválido." });
+    return res.status(403).json({ message: "Formato de Token CSRF inválido." });
   }
   next();
 }
+
+// MiddleWare para verificar o token JWT e autenticar o usuário
+// IIMPORTANTE: Este middleware ainda NÃO está completo para vericicar admin/roles
+interface AuthenticatedRequest extends Request {
+  user?: {
+    // Adiciona a propriedade 'user' ao Request
+    id: string;
+    email: string;
+    role: Role; // Use o enum Role aqui
+  };
+}
+
+const authenticateJWT = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const token = req.cookies.authToken; // Pega o token de cookie httpOnly
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ message: "Autenticação necessária: Token não fornecido." });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      return res
+        .status(403)
+        .json({ message: "Autenticação falhou: Token inválido ou expirado." });
+    }
+    req.user = user; // Anexa as informações do usuário ao objeto de requisição
+    next();
+  });
+};
+
+// Middleware para verificar se o usuário é ADMIN
+const authorizeAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!req.user || req.user.role !== Role.ADMIN) {
+    return res.status(403).json({
+      message:
+        "Acesso negado: Apenas administradores podem realizar esta ação.",
+    });
+  }
+  next();
+};
+
+// Rota de teste simples
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Bem-vindo ao Backend do E-commerce SMM! API está online.",
+  });
+});
 
 // Rota para obter o token CSRF
 app.get("/auth/csrf-token", (req: Request, res: Response) => {
@@ -67,13 +122,6 @@ app.get("/auth/csrf-token", (req: Request, res: Response) => {
     maxAge: 60 * 60 * 1000,
   });
   res.json({ csrfToken }); // Enviar o token em JSON
-});
-
-// Rota de teste simples
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Bem-vindo ao Backend do E-commerce SMM! API está online.",
-  });
 });
 
 // Rota de registro de Usuário
@@ -168,7 +216,7 @@ app.post(
 
       // Gerar um token JWT
       const token = jwt.sign(
-        { userID: user.id, role: user.role }, // Payload do Token
+        { id: user.id, role: user.role }, // Payload do Token
         JWT_SECRET, // Sua chave secreta
         { expiresIn: "1h" }, // Token expira em 1 hora (exemplo)
       );
@@ -214,6 +262,171 @@ app.post(
   verifyCsrfToken,
   (req: Request, res: Response) => {
     res.json({ message: "Dados protegidos por CSRF e JWT (futuramente)." });
+  },
+);
+
+// ----- Rotas de gestão de serviço (APENAS ADMIN POR ENQUANTO) -----
+
+// Criar um novo serviço (POST /api/services)
+app.post(
+  "/api/services",
+  authenticateJWT,
+  authorizeAdmin,
+  verifyCsrfToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { name, description, price, category, minQuantity, maxQuantity } =
+      req.body;
+
+    if (
+      !name ||
+      !description ||
+      typeof price !== "number" ||
+      price <= 0 ||
+      !category
+    ) {
+      return res.status(400).json({
+        message:
+          "Nome , descrição, preço (Válido)  e categoria são obrigatórios.",
+      });
+    }
+
+    try {
+      const service = await prisma.service.create({
+        data: {
+          name,
+          description,
+          price: new Prisma.Decimal(price), //converte para o tipo decimal do prisma
+          category,
+          minQuantity: minQuantity || 1, // Default 1
+          maxQuantity: maxQuantity || 999999, // Default alto
+        },
+      });
+      res.status(201).json({ message: "Serviço criado com sucesso!", service });
+    } catch (error: any) {
+      if (error.code === "P2002" && error.meta?.target?.includes("name")) {
+        return res
+          .status(409)
+          .json({ message: "Já existe um serviço com esse nome." });
+      }
+      console.error("Erro ao criar serviço:", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno do servidor ao criar serviço." });
+    }
+  },
+);
+
+// Listar todos os serviços (GET /api/services)
+app.get("/api/services", async (req: Request, res: Response) => {
+  try {
+    const services = await prisma.service.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    });
+    res.status(200).json(services);
+  } catch (error) {
+    console.error("Erro ao listar serviços", error);
+    res
+      .status(500)
+      .json({ message: "Erro interno do servidor ao listar serviços." });
+  }
+});
+
+// ----- Rotas de Gestão de Pedidos (Requer Autenticação e CSRF) -----
+
+// Criar um novo Pedido (POST /api/orders)
+app.post(
+  "/api/orders",
+  authenticateJWT,
+  verifyCsrfToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { serviceId, quantity } = req.body; // serviceId deve ser o ID de um serviço existente
+
+    if (!req.user) {
+      //Apenas para garantir que o middleware JWT funcionou
+      return res.status(401).json({ message: "Usuário não autenticado." });
+    }
+    if (!serviceId || typeof quantity !== "number" || quantity <= 0) {
+      return res.status(400).json({
+        message: "ID do serviço e quantidade válidos são obrigatórios.",
+      });
+    }
+
+    try {
+      const service = await prisma.service.findUnique({
+        where: { id: serviceId, isActive: true },
+      });
+
+      if (!service) {
+        return res
+          .status(404)
+          .json({ message: "Serviço não encontrado ou inativo." });
+      }
+
+      // Validação da quantidade mínima/máxima do serviço
+      if (quantity < service.minQuantity || quantity > service.maxQuantity) {
+        return res.status(400).json({
+          message: `Quantidade fora dos limites permitidos para este serviço (${service.minQuantity}-${service.maxQuantity}).`,
+        });
+      }
+
+      const unitPrice = service.price;
+      const totalAmount = new Prisma.Decimal(quantity).mul(unitPrice); // Calcula o total
+
+      const order = await prisma.order.create({
+        data: {
+          userId: req.user.id, // ID do usuário logado
+          status: OrderStatus.PENDING, // Status inicial
+          totalAmount,
+          orderLines: {
+            create: {
+              serviceId: service.id,
+              quantity,
+              unitPrice,
+              subtotal: totalAmount, // Para um único item, subtotal é o total
+            },
+          },
+        },
+        include: {
+          orderLines: true, //Inclui os itens do pedido na Resposta
+          user: { select: { id: true, email: true, name: true } }, // Incui dados básicos do usuário
+        },
+      });
+
+      res.status(201).json({ message: "Pedido criado com sucesso!", order });
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno do servidor ao criar pedido. " });
+    }
+  },
+);
+
+// Listar pedidos do usuário (GET /api/orders/me)
+app.get(
+  "/api/orders/me",
+  authenticateJWT,
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuário não autenticado." });
+    }
+
+    try {
+      const orders = await prisma.order.findMany({
+        where: { userId: req.user.id },
+        include: {
+          orderLines: { include: { service: true } }, // Inclui detalhes dos serviços nos itens
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      res.status(200).json(orders);
+    } catch (error) {
+      console.error("Erro ao listar pedidos do usuário:", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno do servidor ao listar pedidos." });
+    }
   },
 );
 
