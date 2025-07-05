@@ -32,7 +32,7 @@ const HowItWorksSection: React.FC = () => {
             2
           </div>
           <h3 className="text-xl font-semibold mb-2">Faça seu pedido</h3>
-          <p className="to-emerald-700 max-w-xs">
+          <p className="to-grey-700 max-w-xs">
             Assim que escolher seu pacote, simplesmente nos forneça seu usuário
             do Instagram e faça o pagamento.
           </p>

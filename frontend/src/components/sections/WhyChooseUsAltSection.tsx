@@ -51,9 +51,9 @@ const WhyChooseUsAltSection: React.FC = () => {
           <div className="flex items-start gap-4 p-4 rounded-lg">
             <TruckIcon className="size-10 text-white shrink-0" />
             <div>
-              <h3 className="text-2xl font-semibold mb-2">Etrega Rápida</h3>
+              <h3 className="text-2xl font-semibold mb-2">Entrega Rápida</h3>
               <p className="text-gray-100">
-                Nós sabemos que você quer resultados rápidos. Nossa serviço
+                Nós sabemos que você quer resultados rápidos. Nosso serviço
                 garante entrega rápida, garantindo que o seu crescimento de
                 seguidores seja sem atrasos.
               </p>

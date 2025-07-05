@@ -13,6 +13,7 @@ const HeroSection: React.FC = () => {
         plataformas favoritas.
       </p>
       <Button
+        asChild
         size="lg"
         className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-3 rounded-full shadow-lg border-blue-600 hover:border-blue-700"
       >

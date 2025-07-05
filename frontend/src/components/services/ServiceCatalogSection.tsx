@@ -113,7 +113,7 @@ const ServiceCatalogSection: React.FC = () => {
               <p className="text-lg font-bold text-gray-700 mb-4">
                 {service.price}
               </p>
-              <Button className="w-full bg-blue-600 text0white hover:bg-blue-700">
+              <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
                 Ver Detalhes
               </Button>
             </CardContent>

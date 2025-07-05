@@ -1,10 +1,10 @@
+import { RegisterForm } from "@/components/auth/RegisterForm";
 import React from "react";
 
 const RegisterPage: React.FC = () => {
   return (
-    <div>
-      <h1>Página de registro</h1>
-      <p>Página de registro do E-commerce SMM!</p>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] p-4">
+      <RegisterForm />
     </div>
   );
 };

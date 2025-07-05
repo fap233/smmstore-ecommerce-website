@@ -1,12 +1,21 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 
 const app = express();
 const prisma = new PrismaClient(); // Instancia do Prisma
 const port = process.env.PORT || 5000; // Porta para o backend, pode ser 5000 ou 3000
 const JWT_SECRET = process.env.JWT_SECRET || "abacaxi123"; // WARNING ALTERAR CHAVE ANTES DO DEPLOY
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET, POST, PUT, DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Middleware para parsear JSON no corpo das requisições
 app.use(express.json());
@@ -20,7 +29,8 @@ app.get("/", (req, res) => {
 
 // Rota de registro de Usuário
 app.post("/auth/register", async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+  const { password, name } = req.body;
+  const email = req.body.email.toLowerCase();
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email e senha são obrigatórios." });
@@ -44,7 +54,7 @@ app.post("/auth/register", async (req: Request, res: Response) => {
         email,
         password: hashedPassword,
         name,
-        role: "user",
+        role: Role.USER,
       },
     });
 
@@ -71,9 +81,7 @@ app.post("/auth/login", async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res
-      .status(400)
-      .json({ messagem: "Email e senha são obrigatórios." });
+    return res.status(400).json({ message: "Email e senha são obrigatórios." });
   }
 
   try {
@@ -83,14 +91,14 @@ app.post("/auth/login", async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Credenciais invalidas." });
+      return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
     // Comparar a senha fornecida com o hash salvo
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ messge: "Credenciais inválidas." });
+      return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
     // Gerar um token JWT
