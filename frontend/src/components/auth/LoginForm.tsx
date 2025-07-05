@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -9,9 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import { Label } from "../ui/label";
 
 export function LoginForm({
   className,
@@ -21,18 +21,45 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Hook para buscar o token CSRF na montagem do componente
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/auth/csrf-token", {
+          method: "GET",
+          credentials: "include", // Para enviar cookies
+        });
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+      } catch (err) {
+        console.error("Erro ao buscar token CSRF na página de login:", err);
+        setError("Falha ao carregar formulário. Tente novamente.");
+      }
+    };
+    fetchCsrfToken();
+  }, []); //executa apenas uma vez na montagem
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    //verificação extra
+    if (!csrfToken) {
+      setError("Token CSRF não carregado. Tente novamente.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
         },
         body: JSON.stringify({ email, password }),
         credentials: "include",
@@ -46,6 +73,11 @@ export function LoginForm({
         );
         return;
       }
+
+      // Se o login for bem-sucedido o backend já enviou o JWT e o CSRF nos cookies
+      // Pegue o novo token CSRF da resposta JSON para as próximas requisições
+      setCsrfToken(data.csrfToken);
+      localStorage.setItem("authToken_debug", data.token);
 
       console.log("Login bem-sucedido:", data);
       // alert("Login bem-sucedido! Bem-vindo(a)!");
