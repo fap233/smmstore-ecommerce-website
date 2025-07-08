@@ -296,8 +296,8 @@ app.post(
           description,
           price: new Prisma.Decimal(price), //converte para o tipo decimal do prisma
           category,
-          minQuantity: minQuantity, // Default 1
-          maxQuantity: maxQuantity, // Default alto
+          minQuantity: minQuantity,
+          maxQuantity: maxQuantity,
         },
       });
       res.status(201).json({ message: "Serviço criado com sucesso!", service });
