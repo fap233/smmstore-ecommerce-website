@@ -61,7 +61,7 @@ model Order {
 
     // Informações para o provedor externo (SMM Panel)
     providerOrderId String? // Id do pedido no painel do provedor externo
-    ProviderServiceId String? // Id do serviço no painel do provedor externo (se aplicável por pedido)
+    providerServiceId String? // Id do serviço no painel do provedor externo (se aplicável por pedido)
     providerStatus String? // Status do pedido no painel do provedor externo
 
     createdAt DateTime @default(now())

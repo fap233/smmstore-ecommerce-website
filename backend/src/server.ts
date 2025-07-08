@@ -60,7 +60,6 @@ interface AuthenticatedRequest extends Request {
   user?: {
     // Adiciona a propriedade 'user' ao Request
     id: string;
-    email: string;
     role: Role; // Use o enum Role aqui
   };
 }
@@ -297,8 +296,8 @@ app.post(
           description,
           price: new Prisma.Decimal(price), //converte para o tipo decimal do prisma
           category,
-          minQuantity: minQuantity || 1, // Default 1
-          maxQuantity: maxQuantity || 999999, // Default alto
+          minQuantity: minQuantity, // Default 1
+          maxQuantity: maxQuantity, // Default alto
         },
       });
       res.status(201).json({ message: "Serviço criado com sucesso!", service });
