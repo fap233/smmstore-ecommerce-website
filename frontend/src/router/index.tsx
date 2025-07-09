@@ -13,6 +13,7 @@ import FaqPage from "../pages/FaqPage";
 import AboutPage from "../pages/AboutPage";
 import SupportPage from "../pages/SupportPage";
 import ServiceDetailsPage from "../pages/ServiceDetailsPage";
+import DashboardPage from "../pages/DashboardPage";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -92,13 +93,19 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        {/*Rotas de usuário (Protegidas - Adicionar autenticação depois) */}
-        {/*<Route path="/dashboard" element={<DashboardPage />} />*/}
+        <Route
+          path="/dashboard"
+          element={
+            <MainLayout>
+              <DashboardPage />
+            </MainLayout>
+          }
+        />
 
-        {/*Rotas de admin (Protegidas - Adicionar autenticação depois) */}
-        {/*<Route path="/admin" element={<AdminPage />} />*/}
+        {/*Rotas de Admin (futuras) */}
+        {/*<Route path="/admin" element={<MainLayout><AdminPage /></MainLayout>} />*/}
 
-        {/*Rota 404 (Página Not Found)*/}
+        {/* Rota 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
