@@ -56,13 +56,20 @@ model Order {
     user User @relation(fields: [userId], references: [id]) // Relação com o User
 
     status OrderStatus @default(PENDING) // Status do pedido
-    totalAmount Decimal @db.Decimal (10,2) // Valor total do pedido
+    totalAmount Decimal @db.Decimal(10,2) // Valor total do pedido
     orderLines OrderLine[] // Itens do pedido
 
     // Informações para o provedor externo (SMM Panel)
     providerOrderId String? // Id do pedido no painel do provedor externo
     providerServiceId String? // Id do serviço no painel do provedor externo (se aplicável por pedido)
     providerStatus String? // Status do pedido no painel do provedor externo
+
+    // Integração com MercadoPago
+    paymentGateway String? // Ex: MercadoPago, Paypal, Stripe
+    paymentId String? // Id da transação na plataforma de pagamento
+    paymentStatus String? // Status da transação
+    checkoutUrl String? // URL para redirecionar o usuário para o checkout (se utilizar checkout padrão)
+    preferenceId String? // Id da preferência criado na plataforma de pagamento (para checkout padrão)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
