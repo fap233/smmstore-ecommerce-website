@@ -40,11 +40,16 @@ model Service {
     description String
     price Decimal @db.Decimal(10, 2) // Preço por unidade ou por pacote base
     category String // Exemplo: Instagram, TikTok, Youtube
-    minQuantity Int @default(20)  // Quantidade mínima
-    maxQuantity Int @default(1000000)  // Quatidade máxima
+    unitCount Int // Quantidade de itens em um pacote (ex: 100, 500, 1000)
+    unitType String // Tipo da unidade (ex: seguidores, curtidas, visualizações)
+    minPackages Int @default(1)  // Quantidade mínima de pacotes
+    maxPackages Int @default(100)  // Quatidade máxima de pacotes
     isActive Boolean @default(true) // Se o serviço está ativo para compra 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    providerServiceId String? // Id do serviço no fornecedor (ex: 1 para "Followers")
+    providerRate Decimal? @db.Decimal(10,5) // Custo do fornecedor por unidade (ex: 0.000)
 
     orderLines OrderLine[] // Um serviço pode ter muitas linhas de pedido
   }
@@ -84,6 +89,7 @@ model Order {
       serviceId String // Id do serviço comprado
       service Service @relation(fields: [serviceId], references: [id])
 
+      link String // Campo para link/username da mídia (Instagram URL, Youtube URL, etc.)
       quantity Int // Quantidade comprada do serviço 
       unitPrice Decimal @db.Decimal(10,2) // Preço por unidade no momento da compra
       subtotal Decimal @db.Decimal(10,2) // subtotal = quantity * unitPrice

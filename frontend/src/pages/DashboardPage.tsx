@@ -35,19 +35,19 @@ const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const API_BASE_URL =
+    import.meta.env.VITE_REACT_APP_API_BASE_URL || "http://localhost:5000";
+
   useEffect(() => {
     const fetchUserOrders = async () => {
       setLoading(true);
       setError(null);
       try {
         // Primeira requisição para obter o token CSRF
-        const csrfResponse = await fetch(
-          "http://localhost:5000/auth/csrf-token",
-          {
-            method: "GET",
-            credentials: "include",
-          },
-        );
+        const csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
+          method: "GET",
+          credentials: "include",
+        });
         if (!csrfResponse.ok) {
           throw new Error("Falha ao obter token CSRF.");
         }
@@ -55,7 +55,7 @@ const DashboardPage: React.FC = () => {
         const csrfToken = csrfData.csrfToken;
 
         // Requisição para buscar os pedidos do usuário
-        const response = await fetch("http://localhost:5000/api/orders/me", {
+        const response = await fetch(`${API_BASE_URL}/api/orders/me`, {
           method: "GET",
           headers: {
             // O navegador envia o authToken httpOnly automaticamente
@@ -66,10 +66,9 @@ const DashboardPage: React.FC = () => {
 
         if (response.status === 401 || response.status === 403) {
           // Usuário não autenticado ou token inválido/expirado
-          alert(
+          setError(
             "Sua sessão expirou ou você não está autenticado. Por favor, faça login novamente.",
           );
-          localStorage.removeItem("authToken_debug"); // Limpa debug token, se usou
           navigate("/login");
           return;
         }
@@ -92,7 +91,7 @@ const DashboardPage: React.FC = () => {
     };
 
     fetchUserOrders();
-  }, [navigate]); // navigate como dependência do useEffect
+  }, [navigate, API_BASE_URL]); // navigate como dependência do useEffect
 
   return (
     <div className="container mx-auto py-8 px-4 text-gray-800">
