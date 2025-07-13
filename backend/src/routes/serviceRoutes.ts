@@ -17,19 +17,36 @@ router.post(
   authorizeAdmin,
   verifyCsrfToken,
   async (req: AuthenticatedRequest, res: Response) => {
-    const { name, description, price, category, minQuantity, maxQuantity } =
-      req.body;
+    const {
+      name,
+      description,
+      price,
+      category,
+      minPackages,
+      unitCount,
+      unitType,
+      maxPackages,
+      providerServiceId,
+      providerRate,
+    } = req.body;
 
     if (
       !name ||
       !description ||
       typeof price !== "number" ||
       price <= 0 ||
-      !category
+      !category ||
+      typeof unitCount !== "number" ||
+      unitCount <= 0 ||
+      !unitType ||
+      typeof unitType !== "string" ||
+      typeof providerServiceId !== "number" ||
+      typeof providerRate !== "number" ||
+      providerRate <= 0
     ) {
       return res.status(400).json({
         message:
-          "Nome, descrição, preço (válido) e categoria são obrigatórios.",
+          "Todos os campos (nome, descrição, preço, categoria, unidades por pacote, tipo de unidade, min/max pacotes, ID e taxa do fornecedor) são obrigatórios e válidos.",
       });
     }
 
@@ -40,8 +57,12 @@ router.post(
           description,
           price: new Prisma.Decimal(price),
           category,
-          minQuantity: minQuantity,
-          maxQuantity: maxQuantity,
+          unitCount,
+          unitType,
+          minPackages: minPackages,
+          maxPackages: maxPackages,
+          providerServiceId: providerServiceId.toString(),
+          providerRate: new Prisma.Decimal(providerRate),
         },
       });
       res.status(201).json({ message: "Serviço criado com sucesso!", service });
