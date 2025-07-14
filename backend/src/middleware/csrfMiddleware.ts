@@ -9,7 +9,7 @@ export function verifyCsrfToken(
   const csrfCookie = req.cookies["csrfToken"];
   const csrfHeader = req.headers["x-csrf-token"];
 
-  if (!csrfCookie || !csrfHeader) {
+  if (!csrfCookie || !csrfHeader || Array.isArray(csrfHeader)) {
     return res.status(403).json({ message: "Token CSRF inválido." });
   }
 

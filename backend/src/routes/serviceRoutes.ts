@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, RequestHandler } from "express";
 import {
   AuthenticatedRequest,
   authenticateJWT,
@@ -13,10 +13,10 @@ const router = express.Router();
 // Criar um novo serviço (POST /)
 router.post(
   "/",
-  authenticateJWT,
-  authorizeAdmin,
-  verifyCsrfToken,
-  async (req: AuthenticatedRequest, res: Response) => {
+  authenticateJWT as RequestHandler,
+  authorizeAdmin as RequestHandler,
+  verifyCsrfToken as RequestHandler,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const {
       name,
       description,
@@ -44,10 +44,11 @@ router.post(
       typeof providerRate !== "number" ||
       providerRate <= 0
     ) {
-      return res.status(400).json({
+      res.status(400).json({
         message:
           "Todos os campos (nome, descrição, preço, categoria, unidades por pacote, tipo de unidade, min/max pacotes, ID e taxa do fornecedor) são obrigatórios e válidos.",
       });
+      return;
     }
 
     try {
@@ -66,33 +67,38 @@ router.post(
         },
       });
       res.status(201).json({ message: "Serviço criado com sucesso!", service });
+      return;
     } catch (error: any) {
       if (error.code === "P2002" && error.meta?.target?.includes("name")) {
-        return res
+        res
           .status(409)
           .json({ message: "Já existe um serviço com esse nome." });
+        return;
       }
       console.error("Erro ao criar serviço:", error);
       res
         .status(500)
         .json({ message: "Erro interno do servidor ao criar serviço." });
+      return;
     }
   },
 );
 
 // Listar todos os serviços (GET /)
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const services = await prisma.service.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
     });
     res.status(200).json(services);
+    return;
   } catch (error) {
     console.error("Erro ao listar serviços:", error);
     res
       .status(500)
       .json({ message: "Erro interno do servidor ao listar serviços." });
+    return;
   }
 });
 

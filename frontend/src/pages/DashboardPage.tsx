@@ -79,10 +79,10 @@ const DashboardPage: React.FC = () => {
 
         const data: Order[] = await response.json();
         setOrders(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Erro ao buscar pedidos:", err);
         setError(
-          err.message ||
+          (err instanceof Error ? err.message : "Erro desconhecido") ||
             "Não foi possível carregar seus pedidos. Tente novamente.",
         );
       } finally {

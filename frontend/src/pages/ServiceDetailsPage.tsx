@@ -1,5 +1,4 @@
 import React from "react";
-import { useParams } from "react-router-dom";
 // Importe os novos componentes
 import ServicePackagesSection from "@/components/services/ServicePackagesSection";
 import ServiceHowToUseSection from "@/components/services/ServiceHowToUseSection";
@@ -73,7 +72,7 @@ const sampleServiceDetails = {
 };
 
 const ServiceDetailsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  // const { id } = useParams<{ id: string }>();
 
   // Por enquanto, usaremos o sampleServiceDetails fixo. No futuro, você buscará pelo 'id'
   const service = sampleServiceDetails;

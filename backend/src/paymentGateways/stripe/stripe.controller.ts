@@ -1,126 +1,122 @@
-import Stripe from "stripe";
-import { AuthenticatedRequest } from "../../middleware/authMiddleware";
 import { Request, Response } from "express";
-import { OrderStatus } from "@prisma/client";
+import Stripe from "stripe";
 import prisma from "../../utils/prisma";
+import { supplierService } from "../../services/supplierService";
 
 // Configuração do Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-06-30.basil",
+  typescript: true,
 });
 
-// Payment Intent
 export const createPaymentIntentHandler = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
-) => {
-  const { orderId } = req.body;
+): Promise<void> => {
+  const { amount, orderId } = req.body;
 
-  if (!req.user) {
-    return res.status(401).json({ message: "Usuário não autenticado." });
-  }
-  if (!orderId) {
-    return res.status(400).json({ message: "ID do pedido é obrigatório." });
+  if (!amount || !orderId) {
+    res
+      .status(400)
+      .json({ message: "Valor e id do pedido são obrigatórios." });
+    return;
   }
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId, userId: req.user.id },
-      include: { orderLines: { include: { service: true } } },
-    });
-
-    if (!order) {
-      return res.status(404).json({
-        message: "Pedido não encontrado ou não pertence a este usuário.",
-      });
-    }
-    if (order.status !== OrderStatus.PENDING) {
-      return res
-        .status(400)
-        .json({ message: "Pedido já processado ou em status inválido." });
-    }
-
-    const amountInCents = Math.round(order.totalAmount.toNumber() * 100);
-
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
+      amount: Math.round(amount * 100),
       currency: "brl",
       metadata: {
-        integration_check: "accept_a_payment",
-        order_id: order.id,
-        userId: req.user.id,
-      },
-      automatic_payment_methods: { enabled: true },
-    });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentGateway: "Stripe",
-        paymentId: paymentIntent.id,
-        paymentStatus: paymentIntent.status,
+        orderId: orderId,
       },
     });
 
-    res.status(200).json({
-      message: "Payment Intent criado!",
+    res.send({
       clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
     });
+    return;
   } catch (error: any) {
-    console.error("Erro ao criar Payment Intent:", error);
-    res.status(500).json({
-      message: error.message || "Erro interno ao criar Payment intent.",
-    });
+    res.status(500).json({ message: error.message });
+    return;
   }
 };
 
-// Função para lidar com o Webhook do Stripe (Será usada na rota)
-export const stripeWebhookHandler = async (req: Request, res: Response) => {
-  const sig = req.headers["stripe-signature"];
+export const stripeWebhookHandler = async (req: Request, res: Response): Promise<void> => {
+  const sig = req.headers["stripe-signature"] as string;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
 
-  //TODO: Em produção, você deve validar a assinatura do webhook!
-  // const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  // try {
-  //  event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  // } catch (err: any){
-  //  console.error(`Webhook Error: ${err.message}`);
-  //  return res.status(400).send(`Webhook Error: ${err.message}`);
-  // }
-
-  event = req.body;
-
-  switch (event.type) {
-    case "payment_intent.succeeded":
-      const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
-      console.log(
-        `PaymentIntent for ${paymentIntentSucceeded.amount} was successful!`,
-      );
-      await prisma.order.update({
-        where: { id: paymentIntentSucceeded.metadata?.order_id as string },
-        data: {
-          status: OrderStatus.COMPLETED,
-          paymentStatus: "approved",
-          paymentId: paymentIntentSucceeded.id,
-        },
-      });
-      break;
-    case "payment_intent.payment_failed":
-      const paymentIntentFailed = event.data.object as Stripe.PaymentIntent;
-      console.log(`PaymentIntent for ${paymentIntentFailed.amount} failed!`);
-      await prisma.order.update({
-        where: { id: paymentIntentFailed.metadata?.order_id as string },
-        data: {
-          status: OrderStatus.CANCELLED,
-          paymentStatus: "rejected",
-          paymentId: paymentIntentFailed.id,
-        },
-      });
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err: any) {
+    console.log(`Erro na assinatura do webhook: ${err.message}`);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
   }
 
-  res.status(200).send();
+  if (event.type === "payment_intent.succeeded") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    console.log("Pagamento bem-sucedido recebido:", paymentIntent.id);
+
+    const orderId = paymentIntent.metadata.orderId;
+
+    if (!orderId) {
+      console.error("Webhook de sucesso sem orderId na metadata!");
+      res.status(400).send("Erro: orderId não encontrado na metadata.");
+    return;
+    }
+
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { orderLines: { include: { service: true } } },
+      });
+
+      if (!order) {
+        console.error(
+          `Pedido ${orderId} não encontrado no banco.`,
+        );
+        res.status(404).send("Pedido não encontrado.");
+        return;
+      }
+
+      if (order.status !== "PENDING_PAYMENT") {
+        console.log(`Pedido ${orderId} já foi processado. Ignorando.`);
+        res.status(200).send("Pedido já processado.");
+        return;
+      }
+
+      console.log(`Enviando pedido ${orderId} para o fornecedor...`);
+      // const providerOrder = await supplierService.placeOrder(
+      //   order.orderLines[0].service.providerServiceId,
+      //   order.orderLines[0].quantity,
+      //   order.orderLines[0].link,
+      // );
+
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: "PENDING",
+          paymentStatus: "PAID",
+          providerStatus: "SENT",
+          // providerOrderId: providerOrder.order,
+          paymentIntentId: paymentIntent.id,
+        },
+      });
+
+      console.log(
+        `Pedido ${orderId} atualizado e enviado para o fornecedor com sucesso!`,
+      );
+    } catch (error) {
+      console.error(
+        `Erro ao processa pedido ${orderId} após o pagamento:`,
+        error,
+      );
+      res.status(500).send("Erro interno ao processar o pedido.");
+      return;
+    }
+  }
+
+  res.status(200).json({ recieved: true });
+  return;
 };
