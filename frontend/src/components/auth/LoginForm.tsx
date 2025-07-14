@@ -2,16 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "../ui";
+import Cookies from "js-cookie";
 
 export function LoginForm({
   className,
@@ -78,9 +70,16 @@ export function LoginForm({
       // Pegue o novo token CSRF da resposta JSON para as próximas requisições
       setCsrfToken(data.csrfToken);
 
+      // Armazenar a role do usuário em um cookie
+      Cookies.set("userRole", data.user.role, { expires: 1 / 24 }); // Expira em 1 hora, igual ao JWT
+
       console.log("Login bem-sucedido:", data);
-      // alert("Login bem-sucedido! Bem-vindo(a)!");
-      navigate("/");
+      // Redirecionar com base na role
+      if (data.user.role === "ADMIN") {
+        navigate("/dashboard/admin");
+      } else {
+        navigate("/dashboard/user"); // Painel para usuário comum
+      }
       window.location.reload(); // Força um recarregamento para a Navbar atualizar se tiver lógica de login
     } catch (err) {
       console.error("Erro na requisição de login:", err);

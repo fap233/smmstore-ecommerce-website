@@ -1,6 +1,6 @@
 // backend/src/controllers/order.controller.ts
 
-import { Response } from 'express';
+import { Request, Response, RequestHandler } from "express";
 import prisma from '../utils/prisma';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
@@ -57,33 +57,63 @@ export const createOrderHandler = async (req: AuthenticatedRequest, res: Respons
 };
 
 // A MUDANÇA ESTÁ AQUI: : Promise<void>
-export const getMyOrdersHandler = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const userId = req.user?.id;
+export const getMyOrdersHandler = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  const userId = req.user?.id;
 
-    if (!userId) {
-        res.status(401).json({ message: "Usuário não autenticado." });
-        return;
-    }
+  if (!userId) {
+    res.status(401).json({ message: "Usuário não autenticado." });
+    return;
+  }
 
-    try {
-        const orders = await prisma.order.findMany({
-            where: {
-                userId: userId,
-            },
-            include: {
-                orderLines: {
-                    include: {
-                        service: true
-                    }
-                },
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-        res.status(200).json(orders);
-    } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
-        res.status(500).json({ message: "Erro ao buscar histórico de pedidos." });
-    }
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        orderLines: {
+          include: {
+            service: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    res.status(200).json(orders);
+    return;
+  } catch (error) {
+    console.error("Erro ao buscar pedidos", error);
+    res.status(500).json({ message: "Erro ao buscar histórico de pedidos." });
+    return;
+  }
+};
+
+// Handler para buscar todos os pedidos (apenas para administradores)
+export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        user: { select: { email: true, name: true } }, // Incluir informações básicas do usuário
+        orderLines: {
+          include: {
+            service: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    res.status(200).json(orders);
+    return;
+  } catch (error) {
+    console.error("Erro ao buscar todos os pedidos:", error);
+    res.status(500).json({ message: "Erro ao buscar todos os pedidos." });
+    return;
+  }
 };

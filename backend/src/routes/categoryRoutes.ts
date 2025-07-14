@@ -1,35 +1,35 @@
 import express, { RequestHandler } from "express";
 import {
-  createService,
-  getAllServices,
-  getServiceById,
-  updateService,
-  deleteService,
-} from "../controllers/service.controller";
+  createCategory,
+  getAllCategories,
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+} from "../controllers/category.controller";
 import { authenticateJWT, authorizeAdmin } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
-// Rotas para Service (CRUD completo, apenas para administradores)
+// Rotas para Category (CRUD completo, apenas para administradores)
 router.post(
   "/",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  createService,
+  createCategory,
 );
-router.get("/", getAllServices);
-router.get("/:id", getServiceById);
+router.get("/", getAllCategories);
+router.get("/:id", getCategoryById);
 router.put(
   "/:id",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  updateService,
+  updateCategory,
 );
 router.delete(
   "/:id",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  deleteService,
+  deleteCategory,
 );
 
 export default router;

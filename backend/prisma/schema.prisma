@@ -39,7 +39,10 @@ model Service {
     name String @unique // Ex: "Seguidores Instagram", "Curtidas TikTok"
     description String
     price Decimal @db.Decimal(10, 2) // Preço por unidade ou por pacote base
-    category String // Exemplo: Instagram, TikTok, Youtube
+    categoryId String // Adicionar categoria
+    category Category @relation(fields: [categoryId], references: [id])
+    socialNetworkId String // Adicionar rede social
+    socialNetwork SocialNetwork @relation(fields: [socialNetworkId], references: [id])
     unitCount Int // Quantidade de itens em um pacote (ex: 100, 500, 1000)
     unitType String // Tipo da unidade (ex: seguidores, curtidas, visualizações)
     minPackages Int @default(1)  // Quantidade mínima de pacotes
@@ -53,6 +56,27 @@ model Service {
 
     orderLines OrderLine[] // Um serviço pode ter muitas linhas de pedido
   }
+
+// Modelo de Rede Social
+model SocialNetwork {
+  id String @id @default(uuid())
+  name String @unique
+  icon String? // URL do ícone da rede social
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  services Service[]
+}
+
+// Modelo de Categoria
+model Category {
+  id String @id @default(uuid())
+  name String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  services Service[]
+}
 
 // Modelo de Pedido
 model Order {
