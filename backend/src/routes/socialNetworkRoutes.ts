@@ -1,35 +1,35 @@
 import express, { RequestHandler } from "express";
 import {
-  createService,
-  getAllServices,
-  getServiceById,
-  updateService,
-  deleteService,
-} from "../controllers/service.controller";
+  createSocialNetwork,
+  getAllSocialNetworks,
+  getSocialNetworkById,
+  updateSocialNetwork,
+  deleteSocialNetwork,
+} from "../controllers/socialNetwork.controller";
 import { authenticateJWT, authorizeAdmin } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
-// Rotas para Service (CRUD completo, apenas para administradores)
+// Rotas para SocialNetwork (CRUD completo, apenas para administradores)
 router.post(
   "/",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  createService,
+  createSocialNetwork,
 );
-router.get("/", getAllServices);
-router.get("/:id", getServiceById);
+router.get("/", getAllSocialNetworks);
+router.get("/:id", getSocialNetworkById);
 router.put(
   "/:id",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  updateService,
+  updateSocialNetwork,
 );
 router.delete(
   "/:id",
   authenticateJWT as RequestHandler,
   authorizeAdmin as RequestHandler,
-  deleteService,
+  deleteSocialNetwork,
 );
 
 export default router;

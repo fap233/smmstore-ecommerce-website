@@ -9,29 +9,29 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu-styles";
-import { cn } from "@/lib/utils";
-// No need for lucide-react imports if not used visually in this snippet, but keep if planning to use icons elsewhere
+import { logout, isAuthenticated } from "@/lib/auth";
+import { Button } from "@/components/ui";
+import Cookies from "js-cookie";
 
-// Definição dos links de serviço para o dropdown (adapte conforme seus serviços reais)
-const serviceLinks: { title: string; href: string; description: string }[] = [
-  {
-    title: "Instagram",
-    href: "/services#instagram",
-    description: "Seguidores, Curtidas, Comentários.",
-  },
-  {
-    title: "TikTok",
-    href: "/services#tiktok",
-    description: "Visualizações, Likes, Compartilhamentos.",
-  },
-  {
-    title: "YouTube",
-    href: "/services#youtube",
-    description: "Inscritos, Views, Horas de Exibição.",
-  },
-];
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+import { serviceLinks } from "@/constants/service-links";
 
 const Header: React.FC = () => {
+  const loggedIn = isAuthenticated();
+  const userRole = Cookies.get("userRole");
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const getDashboardLink = () => {
+    if (!loggedIn) return "/";
+    if (userRole === "ADMIN") return "/dashboard";
+    return "/dashboard/user";
+  };
+
   return (
     <header className="bg-white p-4 shadow-md">
       <nav className="container mx-auto flex justify-between items-center">
@@ -40,8 +40,8 @@ const Header: React.FC = () => {
           HydraSMM
         </Link>
 
-        {/* Menu de Navegação Principal */}
-        <NavigationMenu>
+        {/* Menu de Navegação Principal (Desktop) */}
+        <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
             {/* Item: Serviços com Dropdown */}
             <NavigationMenuItem>
@@ -104,19 +104,75 @@ const Header: React.FC = () => {
                 Suporte
               </Link>
             </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+            {loggedIn && (
+                  <Link to={getDashboardLink()} className={navigationMenuTriggerStyle()}>
+                    Dashboard
+                  </Link>
+                )}
+              </NavigationMenuList>
+            </NavigationMenu>
 
-        {/* Botões de Ação (Login/Registro) */}
-        <div className="flex items-center gap-2">
-          <Link to="/login" className={navigationMenuTriggerStyle()}>
-            Entrar
-          </Link>
-          <Link to="/register" className={navigationMenuTriggerStyle()}>
-            Cadastro
-          </Link>
-          {/* Adicionar um botão de carrinho ou ícone aqui depois */}
-        </div>
+            {/* Botões de Ação (Desktop) */}
+            <div className="hidden md:flex items-center gap-2">
+              {loggedIn ? (
+                <>
+                  <Link to={getDashboardLink()} className={navigationMenuTriggerStyle()}>
+                    Meu Painel
+                  </Link>
+                  <Button onClick={handleLogout} className="text-base px-4 py-2">
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className={navigationMenuTriggerStyle()}>
+                    Entrar
+                  </Link>
+                  <Link to="/register" className={navigationMenuTriggerStyle()}>
+                    Cadastro
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Menu Hamburguer para Mobile */}
+            <div className="md:hidden flex items-center">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <nav className="flex flex-col gap-4 pt-8">
+                    <Link to="/services" className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>Serviços</Link>
+                    <Link to="/blog" className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>Blog</Link>
+                    <Link to="/faq" className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>FAQ</Link>
+                    <Link to="/about" className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>Sobre Nós</Link>
+                    <Link to="/support" className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>Suporte</Link>
+                    {loggedIn && (
+                      <Link to={getDashboardLink()} className="text-lg font-semibold" onClick={() => { /* close sheet */ }}>Meu Painel</Link>
+                    )}
+                    <div className="mt-4">
+                      {loggedIn ? (
+                        <Button onClick={handleLogout} className="w-full text-base px-4 py-2">
+                          Sair
+                        </Button>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <Link to="/login">
+                            <Button className="w-full text-base px-4 py-2">Entrar</Button>
+                          </Link>
+                          <Link to="/register">
+                            <Button variant="outline" className="w-full text-base px-4 py-2">Cadastro</Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
       </nav>
     </header>
   );
@@ -124,31 +180,4 @@ const Header: React.FC = () => {
 
 export default Header;
 
-// Componente auxiliar para os itens da lista de navegação
-const ListItem = React.forwardRef<
-  HTMLAnchorElement, // ListItem ainda renderiza um 'a'
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, href, ...props }, ref) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        {/* Aqui, o Link do React Router DOM pode ser o 'a' que NavigationMenuLink espera */}
-        <Link
-          to={href || "#"} // href agora é 'to' para Link do react-router-dom
-          ref={ref} // 'as any' para o ref forwarding
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className,
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
-        </Link>
-      </NavigationMenuLink>
-    </li>
-  );
-});
-ListItem.displayName = "ListItem";
+import ListItem from "@/components/common/ListItem";

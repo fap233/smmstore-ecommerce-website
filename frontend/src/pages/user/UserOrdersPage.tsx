@@ -1,5 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui";
 import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 
 interface OrderLine {
@@ -7,9 +15,7 @@ interface OrderLine {
   quantity: number;
   unitPrice: string; // Prisma retorna Decimal como string
   subtotal: string;
-  service: {
-    name: string;
-  };
+  service: { name: string };
 }
 
 interface Order {
@@ -20,7 +26,7 @@ interface Order {
   orderLines: OrderLine[];
 }
 
-const DashboardPage: React.FC = () => {
+const UserOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +40,6 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Primeira requisição para obter o token CSRF
         const csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
           method: "GET",
           credentials: "include",
@@ -45,18 +50,15 @@ const DashboardPage: React.FC = () => {
         const csrfData = await csrfResponse.json();
         const csrfToken = csrfData.csrfToken;
 
-        // Requisição para buscar os pedidos do usuário
         const response = await fetch(`${API_BASE_URL}/api/orders/me`, {
           method: "GET",
           headers: {
-            // O navegador envia o authToken httpOnly automaticamente
-            "X-CSRF-TOKEN": csrfToken, // Envia o token CSRF no header
+            "X-CSRF-TOKEN": csrfToken,
           },
-          credentials: "include", // Para enviar os cookies (authToken e csrfToken)
+          credentials: "include",
         });
 
         if (response.status === 401 || response.status === 403) {
-          // Usuário não autenticado ou token inválido/expirado
           setError(
             "Sua sessão expirou ou você não está autenticado. Por favor, faça login novamente.",
           );
@@ -82,11 +84,11 @@ const DashboardPage: React.FC = () => {
     };
 
     fetchUserOrders();
-  }, [navigate, API_BASE_URL]); // navigate como dependência do useEffect
+  }, [navigate, API_BASE_URL]);
 
   return (
-    <div className="container mx-auto py-8 px-4 text-gray-800">
-      <h1 className="text-4xl font-bold text-center mb-12">Meu Dashboard</h1>
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8">Meus Pedidos</h1>
 
       {loading && <p className="text-center">Carregando pedidos...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
@@ -98,15 +100,12 @@ const DashboardPage: React.FC = () => {
       )}
 
       {!loading && !error && orders.length > 0 && (
-        <Card className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-gray-900">
-              Histórico de Pedidos
-            </CardTitle>
+            <CardTitle>Histórico de Pedidos</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
-              <TableCaption>Uma lista dos seus pedidos recentes.</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">Id do Pedido</TableHead>
@@ -148,4 +147,4 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage;
+export default UserOrdersPage;

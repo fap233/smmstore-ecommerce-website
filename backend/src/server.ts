@@ -9,6 +9,9 @@ import authRoutes from "./routes/authRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
+import statisticsRoutes from "./routes/statisticsRoutes";
+import socialNetworkRoutes from "./routes/socialNetworkRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 
 const app = express();
 const port = process.env.PORT || 5000; // porta para o backend, pode ser 5000 ou 3000
@@ -45,6 +48,9 @@ app.use("/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/statistics", statisticsRoutes);
+app.use("/api/social-networks", socialNetworkRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // inicia o servidor
 app.listen(port, () => {
