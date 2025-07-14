@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import express, { Request, Response } from "express";
+import express, { Request, Response, RequestHandler } from "express";
 import prisma from "../utils/prisma";
 import { generateCsrfToken } from "../utils/csrf";
 import { verifyCsrfToken } from "../middleware/csrfMiddleware";
@@ -25,16 +25,17 @@ router.get("/csrf-token", (req: Request, res: Response) => {
 // Rota de Registro do Usuário
 router.post(
   "/register",
-  verifyCsrfToken,
-  async (req: Request, res: Response) => {
+  verifyCsrfToken as RequestHandler,
+  async (req: Request, res: Response): Promise<void> => {
     const { password, name, email: rawEmail } = req.body;
     const email =
       typeof rawEmail === "string" ? rawEmail.toLowerCase() : undefined;
 
     if (!email || !password) {
-      return res
+      res
         .status(400)
         .json({ message: "Email e senha são obrigatórios." });
+      return;
     }
 
     try {
@@ -43,7 +44,8 @@ router.post(
       });
 
       if (existingUser) {
-        return res.status(409).json({ message: "Email já cadastrado." });
+        res.status(409).json({ message: "Email já cadastrado." });
+        return;
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -71,12 +73,13 @@ router.post(
       res
         .status(500)
         .json({ message: "Erro interno no servidor ao registrar usuário." });
+      return;
     }
   },
 );
 
 // Rota de Login de Usuário
-router.post("/login", verifyCsrfToken, async (req: Request, res: Response) => {
+router.post("/login", verifyCsrfToken as RequestHandler, async (req: Request, res: Response): Promise<void> => {
   const { password } = req.body;
   const email =
     typeof req.body.email === "string"
@@ -84,7 +87,8 @@ router.post("/login", verifyCsrfToken, async (req: Request, res: Response) => {
       : undefined;
 
   if (!email || !password) {
-    return res.status(400).json({ message: "Email e senha são obrigatórios." });
+    res.status(400).json({ message: "Email e senha são obrigatórios." });
+    return;
   }
 
   try {
@@ -93,13 +97,15 @@ router.post("/login", verifyCsrfToken, async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Credenciais inválidas." });
+      res.status(401).json({ message: "Credenciais inválidas." });
+      return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Credenciais inválidas." });
+      res.status(401).json({ message: "Credenciais inválidas." });
+      return;
     }
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
@@ -132,11 +138,12 @@ router.post("/login", verifyCsrfToken, async (req: Request, res: Response) => {
       csrfToken: csrfToken,
     });
   } catch (error) {
-    console.error("Erro no login:", error);
-    res
-      .status(500)
-      .json({ message: "Erro interno no servidor ao logar usuário." });
-  }
+      console.error("Erro no login:", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno no servidor ao logar usuário." });
+      return;
+    }
 });
 
 export default router;

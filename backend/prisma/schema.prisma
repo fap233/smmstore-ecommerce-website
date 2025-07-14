@@ -57,49 +57,38 @@ model Service {
 // Modelo de Pedido
 model Order {
     id String @id @default(uuid())
-    userId String
     user User @relation(fields: [userId], references: [id]) // Relação com o User
-
-    status OrderStatus @default(PENDING) // Status do pedido
-    totalAmount Decimal @db.Decimal(10,2) // Valor total do pedido
-    orderLines OrderLine[] // Itens do pedido
-
-    // Informações para o provedor externo (SMM Panel)
-    providerOrderId String? // Id do pedido no painel do provedor externo
-    providerServiceId String? // Id do serviço no painel do provedor externo (se aplicável por pedido)
-    providerStatus String? // Status do pedido no painel do provedor externo
-
-    // Integração com MercadoPago
-    paymentGateway String? // Ex: MercadoPago, Paypal, Stripe
-    paymentId String? // Id da transação na plataforma de pagamento
-    paymentStatus String? // Status da transação
-    checkoutUrl String? // URL para redirecionar o usuário para o checkout (se utilizar checkout padrão)
-    preferenceId String? // Id da preferência criado na plataforma de pagamento (para checkout padrão)
-
+    userId String
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+    totalAmount Decimal @db.Decimal(10,2) // Valor total do pedido
+    status OrderStatus @default(PENDING) // Status do pedido
+    paymentStatus String? // Status da transação
+    providerStatus String? // Status do pedido no painel do provedor externo
+    providerOrderId String? // Id do pedido no painel do provedor externo
+    paymentIntentId String? @unique
+    orderLines OrderLine[] // Itens do pedido
+
+    @@map("orders")
   }
 
   // Modelo de Linha de Pedido
   model OrderLine {
       id String @id @default(uuid())
-      orderId String // Id do pedido ao qual pertence
       order Order @relation(fields: [orderId], references: [id])
-
-      serviceId String // Id do serviço comprado
+      orderId String // Id do pedido ao qual pertence
       service Service @relation(fields: [serviceId], references: [id])
-
-      link String // Campo para link/username da mídia (Instagram URL, Youtube URL, etc.)
+      serviceId String // Id do serviço comprado
       quantity Int // Quantidade comprada do serviço 
       unitPrice Decimal @db.Decimal(10,2) // Preço por unidade no momento da compra
-      subtotal Decimal @db.Decimal(10,2) // subtotal = quantity * unitPrice
-      
-      createdAt DateTime @default(now())
-      updatedAt DateTime @updatedAt
+      link String // Campo para link/username da mídia (Instagram URL, Youtube URL, etc.)
+
+      @@map("order_lines")
     }
 
     // Enum para o status do pedido
     enum OrderStatus {
+        PENDING_PAYMENT
         PENDING
         PROCESSING
         COMPLETED

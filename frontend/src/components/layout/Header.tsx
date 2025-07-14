@@ -7,8 +7,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu-styles";
 import { cn } from "@/lib/utils";
 // No need for lucide-react imports if not used visually in this snippet, but keep if planning to use icons elsewhere
 

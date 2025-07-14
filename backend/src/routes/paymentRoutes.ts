@@ -1,4 +1,4 @@
-import express from "express";
+import express, { RequestHandler } from "express";
 import { authenticateJWT } from "../middleware/authMiddleware";
 import { verifyCsrfToken } from "../middleware/csrfMiddleware";
 import {
@@ -11,8 +11,8 @@ const router = express.Router();
 // Rota para criar Payment Intent (POST /api/payments/create-payment-intent)
 router.post(
   "/create-payment-intent",
-  authenticateJWT,
-  verifyCsrfToken,
+  authenticateJWT as RequestHandler,
+  verifyCsrfToken as RequestHandler,
   createPaymentIntentHandler,
 );
 
@@ -20,7 +20,7 @@ router.post(
 // OBS: O express.raw precisa vir aqui, antes do handler, pois ele altera o req.body
 router.post(
   "/webhook/stripe",
-  express.raw({ type: "application/json" }),
+  express.raw({ type: "application/json" }) as RequestHandler,
   stripeWebhookHandler,
 );
 
