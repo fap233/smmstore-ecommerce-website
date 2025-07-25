@@ -115,9 +115,3 @@ npm run dev
 
 The frontend application will be available at `http://localhost:5173` and the backend at `http://localhost:5000` (or the ports you configure).# Navigate to the backend folder
 cd backend
-
-# Install dependencies
-npm install
-
-# Create a copy of the environment file
-cp .env.example .env
